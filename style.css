@@ -138,3 +138,35 @@ output{font-size:38px;font-weight:800;min-width:64px;text-align:center;font-vari
 
 .news{padding-left:22px;margin:8px 0 18px}
 .news li{margin-bottom:12px}
+
+/* ---------- Gestaltung 27.11.2026: Lagerraum – Regalwand, Karton, Etiketten ---------- */
+:root{--accent:#1f7a5c;--bg:#f4efe6;--surface:#fffdf9;--surface-2:#ede5d6;--border:#e0d5c1;--ink:#22271f;--muted:#716b5c;--karton:#cf9d64;
+  --display:"Avenir Next Condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root{--accent:#4cc79a;--bg:#121512;--surface:#1b201b;--surface-2:#262d26;--border:#313a31;--ink:#ecefe8;--muted:#9aa295;--karton:#a97c4a}}
+body{padding-top:0;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2280%22%20height%3D%2280%22%3E%3Cpath%20d%3D%22M0%2079.5H80M40%200V6M40%2074V80%22%20stroke%3D%22%231f5c49%22%20stroke-opacity%3D%22.07%22%20fill%3D%22none%22/%3E%3C/svg%3E");background-attachment:fixed}
+
+.top{position:relative;display:block;margin:0 auto;max-width:720px;padding:calc(env(safe-area-inset-top) + 150px) 18px 6px;border:0;
+  background:url(kopf.svg) center top/100% calc(env(safe-area-inset-top) + 138px) no-repeat;backdrop-filter:none;-webkit-backdrop-filter:none}
+@media(min-width:440px){.top{background-size:cover;background-size:100% calc(env(safe-area-inset-top) + 138px)}}
+.top h1{font-family:var(--display);font-size:40px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;line-height:1.05}
+.top h1::after{content:"Alles da? Ein Blick genügt.";display:block;font:500 14px/1.4 -apple-system,system-ui,sans-serif;text-transform:none;letter-spacing:0;color:var(--muted);margin-top:2px}
+.scan-btn{position:absolute;right:16px;top:calc(env(safe-area-inset-top) + 152px);box-shadow:0 6px 16px rgba(31,92,73,.3)}
+main{padding-top:10px}
+h2{font-family:var(--display);font-size:19px;display:flex;align-items:center;gap:10px}
+h2::after{content:"";flex:1;height:5px;border-radius:3px;background:var(--karton);opacity:.55}
+.search{box-shadow:var(--shadow)}
+
+/* Kacheln wie Regalfächer: Brett unten in Ampelfarbe, Nummer als Etikett */
+.tile{overflow:hidden;border-radius:16px;padding-bottom:20px;border-color:var(--border)}
+.tile::before{content:"";position:absolute;left:0;right:0;top:0;height:62px;background:linear-gradient(var(--surface-2),transparent)}
+.tile::after{content:"";position:absolute;left:0;right:0;bottom:0;height:7px;background:var(--accent)}
+.tile>*{position:relative;z-index:1}
+.tile.low::after{background:var(--warn)}
+.tile.alarm{border-color:color-mix(in srgb,var(--alarm) 55%,var(--border));box-shadow:var(--shadow);background:color-mix(in srgb,var(--alarm) 7%,var(--surface))}
+.tile.alarm::after{background:var(--alarm)}
+.tile .num{border-radius:8px;font-family:var(--display);font-size:20px}
+.list-item{border-left:5px solid var(--karton)}
+.list-item.alarm{border-left-color:var(--alarm)}
+.nav svg{width:25px;height:25px;display:block;margin:0 auto}
+.nav.active{background:var(--accent-soft)}
+.product-head .ico{width:104px;height:104px;margin:0 auto;display:grid;place-items:center;border-radius:28px;background:var(--surface-2)}

@@ -1,6 +1,6 @@
 // Version erhöhen, wenn sich Dateien ändern
-const VERSION = 'lager-v8';
-const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg'];
+const VERSION = 'lager-v9';
+const FILES = ['./', 'index.html', 'style.css', 'kopf.svg', 'app.js', 'manifest.webmanifest', 'icons/icon.svg'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });

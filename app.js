@@ -8,11 +8,10 @@
   const QTY_STEPS = [1, 2, 5, 10];
 
   // Neuigkeiten-Fenster: bei jeder spürbaren Änderung Kennung und Punkte ersetzen
-  const NEWS_ID = '2026-11-27-verwaltung';
+  const NEWS_ID = '2026-11-27-gestaltung';
   const NEWS = [
-    ['Neuer Barcode?', 'Die App sucht den Namen online. Du kannst das Produkt direkt anlegen oder einem vorhandenen zuordnen.'],
-    ['Produkte löschen:', 'Im Reiter Lager unter „Alle Produkte verwalten“.'],
-    ['Sicherer Abgleich:', 'Buchungen von mehreren Handys überschreiben sich nicht mehr.']
+    ['Neues Aussehen:', 'Titelbild mit Regalwand, und jede Kachel sieht aus wie ein Regalfach.'],
+    ['Farben wie bisher:', 'Rot heißt bestellen, Gelb bald, Grün genug.']
   ];
 
   // Startbestand – Mengen und Grenzen bitte anpassen
