@@ -8,10 +8,10 @@
   const QTY_STEPS = [1, 2, 5, 10];
 
   // Neuigkeiten-Fenster: bei jeder spürbaren Änderung Kennung und Punkte ersetzen
-  const NEWS_ID = '2026-11-27-gestaltung';
+  const NEWS_ID = '2026-11-28-regal';
   const NEWS = [
-    ['Neues Aussehen:', 'Titelbild mit Regalwand, und jede Kachel sieht aus wie ein Regalfach.'],
-    ['Farben wie bisher:', 'Rot heißt bestellen, Gelb bald, Grün genug.']
+    ['UI-Redesign „Regalwand“:', 'Neuer Header als Vektorgrafik, jede Kachel ist als Regalfach gerendert.'],
+    ['Statuslogik unverändert:', 'Rot = unter Grenzwert, bestellen. Gelb = Vorwarnstufe. Grün = Bestand reicht.']
   ];
 
   // Startbestand – Mengen und Grenzen bitte anpassen
