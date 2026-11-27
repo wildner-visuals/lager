@@ -25,7 +25,13 @@
   ];
 
   // ---- Speicher -------------------------------------------------------
-  // Hier nur lokal im Gerät. Gemeinsamer Bestand über mehrere Geräte folgt, sobald geklärt ist, wo die Daten liegen.
+  // Gerät (localStorage) + gemeinsamer Bestand in Supabase (Tabelle lager_bestand, Zeile 'main').
+  // Öffentlicher Schlüssel ist für den Browser gedacht; die Zugriffsregeln stehen in der Datenbank.
+  const CLOUD = {
+    url: 'https://oyesontlhecbtqshhgtk.supabase.co',
+    key: 'sb_publishable_18GRmrCwrUodSpv_-oZXGQ_VgpPFkkk',
+    table: 'lager_bestand'
+  };
   const Store = {
     load() {
       try {
@@ -37,7 +43,57 @@
     save(data) { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
   };
   let data = Store.load();
-  const save = () => Store.save(data);
+  let cloudDirty = false;
+  let cloudOk = true;
+
+  const cloudHeaders = { apikey: CLOUD.key, 'Content-Type': 'application/json' };
+  async function cloudFetch() {
+    const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.main&select=data`, { headers: cloudHeaders, cache: 'no-store' });
+    if (!r.ok) throw new Error('lesen');
+    const rows = await r.json();
+    return rows[0] ? rows[0].data : null;
+  }
+  async function cloudPush() {
+    const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.main`, {
+      method: 'PATCH',
+      headers: { ...cloudHeaders, Prefer: 'return=minimal' },
+      body: JSON.stringify({ data, updated_at: new Date().toISOString() })
+    });
+    if (!r.ok) throw new Error('schreiben');
+    cloudDirty = false; cloudOk = true;
+  }
+  function syncStatus(msg) { const el = $('sync'); if (el) el.textContent = msg; }
+
+  // Beim Öffnen und beim Zurückkehren in die App: gemeinsamen Stand holen (der Server gewinnt, wenn er Daten hat)
+  async function pullCloud() {
+    try {
+      const remote = await cloudFetch();
+      cloudOk = true;
+      if (remote && Array.isArray(remote.products) && remote.products.length) {
+        data = remote;
+        Store.save(data);
+        renderAll();
+      } else {
+        await cloudPush();
+      }
+      syncStatus('');
+    } catch (e) {
+      cloudOk = false;
+      syncStatus('Keine Verbindung – Stand nur auf diesem Gerät');
+    }
+  }
+  async function pushCloud() {
+    try { await cloudPush(); syncStatus(''); }
+    catch (e) { cloudDirty = true; cloudOk = false; syncStatus('Nicht gesendet – wird erneut versucht'); }
+  }
+
+  const save = () => {
+    Store.save(data);
+    cloudDirty = true;
+    pushCloud();
+  };
+  window.addEventListener('online', () => { if (cloudDirty) pushCloud(); else pullCloud(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pullCloud(); });
 
   // ---- Hilfen ---------------------------------------------------------
   const $ = (id) => document.getElementById(id);
@@ -335,5 +391,6 @@
 
   // ---- Start ----------------------------------------------------------
   renderTiles();
+  pullCloud();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
