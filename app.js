@@ -7,6 +7,14 @@
   const LOW_FACTOR = 2;               // gelb, wenn bis zum Doppelten der Bestell-Grenze
   const QTY_STEPS = [1, 2, 5, 10];
 
+  // Neuigkeiten-Fenster: bei jeder spürbaren Änderung Kennung und Punkte ersetzen
+  const NEWS_ID = '2026-11-27-verwaltung';
+  const NEWS = [
+    ['Neuer Barcode?', 'Die App sucht den Namen online. Du kannst das Produkt direkt anlegen oder einem vorhandenen zuordnen.'],
+    ['Produkte löschen:', 'Im Reiter Lager unter „Alle Produkte verwalten“.'],
+    ['Sicherer Abgleich:', 'Buchungen von mehreren Handys überschreiben sich nicht mehr.']
+  ];
+
   // Startbestand – Mengen und Grenzen bitte anpassen
   const SEED = [
     { id: 'hand-desinfektion', name: 'Händedesinfektion (Flasche für unterwegs)', icon: '🧴', stock: 0, threshold: 10, codes: [] },
@@ -528,7 +536,20 @@
     e.target.value = '';
   });
 
+  // ---- Neuigkeiten ----------------------------------------------------
+  const NEWS_KEY = STORE_KEY + '.news';
+  function showNews() {
+    if (localStorage.getItem(NEWS_KEY) === NEWS_ID) return;
+    $('news-list').innerHTML = NEWS.map(([head, text]) => `<li><b>${esc(head)}</b> ${esc(text)}</li>`).join('');
+    $('news').hidden = false;
+  }
+  $('btn-news-close').addEventListener('click', () => {
+    localStorage.setItem(NEWS_KEY, NEWS_ID);
+    $('news').hidden = true;
+  });
+
   // ---- Start ----------------------------------------------------------
+  showNews();
   renderTiles();
   sync();
   // Automatische Aktualisierung: beim Öffnen nach einer neuen Version suchen und,
