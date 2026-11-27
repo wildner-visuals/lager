@@ -1,0 +1,11 @@
+{
+  "name": "Lager",
+  "short_name": "Lager",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f5",
+  "theme_color": "#2e7d5b",
+  "lang": "de",
+  "icons": [{ "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

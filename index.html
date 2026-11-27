@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lager">
+<meta name="theme-color" content="#2e7d5b">
+<title>Lager</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1>📦 Lager</h1>
+  <button id="btn-scan" class="scan-btn" aria-label="Code scannen">📷 Scannen</button>
+</header>
+
+<main>
+  <!-- Ausgabe-Ansicht (für alle) -->
+  <section id="view-start" class="view active">
+    <input id="search" class="search" type="search" placeholder="🔎 Suchen …" aria-label="Suchen">
+    <div id="tiles" class="tiles"></div>
+    <p class="hint">Tippe auf ein Produkt, dann auf <b>Entnommen</b> oder <b>Zurück ins Lager</b>.</p>
+  </section>
+
+  <!-- Verantwortliche -->
+  <section id="view-manage" class="view">
+    <div id="pin-box" class="card">
+      <p>🔒 Nur für die verantwortliche Person.</p>
+      <input id="pin-input" type="password" inputmode="numeric" placeholder="Code eingeben" class="search">
+      <button id="pin-btn" class="big-btn">Öffnen</button>
+      <p id="pin-error" class="error"></p>
+    </div>
+    <div id="manage-content" hidden>
+      <h2>🚨 Jetzt bestellen</h2>
+      <div id="alarm-list"></div>
+      <h2>📋 Ist-Bestand</h2>
+      <div id="stock-list"></div>
+      <button id="btn-add" class="big-btn">➕ Neues Produkt</button>
+      <h2>🕒 Letzte Bewegungen</h2>
+      <div id="history"></div>
+      <h2>💾 Sicherung</h2>
+      <div class="row">
+        <button id="btn-export" class="big-btn">⬇️ Sichern</button>
+        <button id="btn-import" class="big-btn">⬆️ Laden</button>
+        <input id="file-import" type="file" accept="application/json" hidden>
+      </div>
+      <button id="btn-lock" class="big-btn secondary">🔓 Verlassen</button>
+    </div>
+  </section>
+
+  <!-- Scanner -->
+  <section id="view-scan" class="view">
+    <video id="video" playsinline muted></video>
+    <p id="scan-status" class="hint">Halte den Code vor die Kamera.</p>
+    <div id="scan-manual" class="card">
+      <p>Kamera geht nicht? Code oder Produktname eintippen:</p>
+      <input id="manual-code" class="search" placeholder="Code oder Name">
+      <button id="btn-manual" class="big-btn">Suchen</button>
+    </div>
+    <button id="btn-scan-close" class="big-btn secondary">Zurück</button>
+  </section>
+</main>
+
+<nav class="bottom">
+  <button data-view="view-start" class="nav active">🏠<span>Ausgabe</span></button>
+  <button data-view="view-manage" class="nav">🔑<span>Lager</span></button>
+</nav>
+
+<!-- Produkt-Blatt -->
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-card">
+    <div id="sheet-head"></div>
+    <div class="stepper">
+      <span>Menge</span>
+      <button id="qty-minus" class="step">−</button>
+      <output id="qty">1</output>
+      <button id="qty-plus" class="step">+</button>
+    </div>
+    <div class="row">
+      <button id="btn-out" class="big-btn out">📤 Entnommen</button>
+      <button id="btn-in" class="big-btn in">📥 Zurück ins Lager</button>
+    </div>
+    <div id="sheet-link" hidden>
+      <button id="btn-link" class="big-btn secondary">🔗 Diesen Code mit dem Produkt verbinden</button>
+    </div>
+    <button id="btn-close" class="big-btn secondary">Schließen</button>
+  </div>
+</div>
+
+<!-- Produkt bearbeiten -->
+<div id="edit" class="sheet" hidden>
+  <div class="sheet-card">
+    <h2 id="edit-title">Produkt</h2>
+    <label>Name<input id="f-name" class="search"></label>
+    <label>Symbol (Emoji)<input id="f-icon" class="search" maxlength="4"></label>
+    <label>Im Lager (Stück)<input id="f-stock" type="number" min="0" class="search"></label>
+    <label>Bestellen, wenn nur noch so viele da sind<input id="f-threshold" type="number" min="0" class="search"></label>
+    <label>Codes (durch Komma getrennt, optional)<input id="f-codes" class="search"></label>
+    <div class="row">
+      <button id="btn-edit-save" class="big-btn">💾 Speichern</button>
+      <button id="btn-edit-del" class="big-btn danger">🗑️ Löschen</button>
+    </div>
+    <button id="btn-edit-close" class="big-btn secondary">Abbrechen</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

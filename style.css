@@ -1,0 +1,60 @@
+:root{--green:#2e7d5b;--green-l:#e6f4ec;--yellow:#f2b705;--yellow-l:#fff6d6;--red:#c62828;--red-l:#fde4e4;--bg:#f4f6f5;--ink:#1d2320;--muted:#5d6b64}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,system-ui,"Helvetica Neue",Arial,sans-serif;font-size:20px;-webkit-tap-highlight-color:transparent}
+body{padding:env(safe-area-inset-top) 0 calc(84px + env(safe-area-inset-bottom))}
+[hidden]{display:none!important}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--green);color:#fff}
+.top h1{margin:0;font-size:28px}
+.scan-btn{font-size:20px;padding:12px 16px;border:0;border-radius:14px;background:#fff;color:var(--green);font-weight:700}
+main{padding:16px;max-width:760px;margin:0 auto}
+.view{display:none}
+.view.active{display:block}
+h2{font-size:24px;margin:26px 0 10px}
+.hint{color:var(--muted);text-align:center;font-size:18px}
+.search{width:100%;font-size:22px;padding:16px;border:2px solid #c9d3cd;border-radius:14px;background:#fff;margin:6px 0 12px}
+label{display:block;font-size:18px;margin:12px 0 4px;color:var(--muted)}
+label .search{margin:4px 0 0}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:560px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{border:0;border-radius:18px;padding:16px 10px;text-align:center;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);font-family:inherit;color:inherit;min-height:150px}
+.tile .ico{font-size:46px;display:block;line-height:1.1}
+.tile .name{display:block;font-size:19px;font-weight:600;margin:6px 0 4px}
+.tile .num{display:inline-block;font-size:26px;font-weight:800;padding:2px 14px;border-radius:12px}
+.tile.ok .num{background:var(--green-l);color:var(--green)}
+.tile.low .num{background:var(--yellow-l);color:#7a5a00}
+.tile.alarm .num{background:var(--red-l);color:var(--red)}
+.tile.alarm{outline:3px solid var(--red)}
+.big-btn{display:block;width:100%;font-size:22px;font-weight:700;padding:18px;margin:10px 0;border:0;border-radius:16px;background:var(--green);color:#fff;font-family:inherit}
+.big-btn.secondary{background:#e3e9e6;color:var(--ink)}
+.big-btn.danger{background:var(--red)}
+.big-btn.out{background:#b45309}
+.big-btn.in{background:var(--green)}
+.row{display:flex;gap:10px}
+.row>.big-btn{flex:1}
+.card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.error{color:var(--red);min-height:1em}
+.list-item{display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;margin:8px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.list-item .ico{font-size:34px}
+.list-item .grow{flex:1}
+.list-item .sub{color:var(--muted);font-size:16px}
+.list-item .num{font-size:24px;font-weight:800}
+.list-item.alarm{background:var(--red-l)}
+.list-item.alarm .num{color:var(--red)}
+.list-item button{font-family:inherit;font-size:18px;padding:10px 14px;border:0;border-radius:12px;background:#e3e9e6}
+.history-line{font-size:17px;padding:8px 0;border-bottom:1px solid #e1e7e4}
+.bottom{position:fixed;left:0;right:0;bottom:0;display:flex;background:#fff;border-top:1px solid #d6ddd9;padding-bottom:env(safe-area-inset-bottom);z-index:6}
+.nav{flex:1;border:0;background:none;padding:10px 0;font-size:30px;font-family:inherit;color:var(--muted)}
+.nav span{display:block;font-size:17px}
+.nav.active{color:var(--green);font-weight:700}
+#video{width:100%;border-radius:16px;background:#000;max-height:60vh;object-fit:cover}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet-card{background:var(--bg);width:100%;max-width:620px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom))}
+.sheet-head{text-align:center}
+.product-head{text-align:center;margin-bottom:6px}
+.product-head .ico{font-size:72px;display:block}
+.product-head .name{font-size:26px;font-weight:700}
+.product-head .num{font-size:22px;color:var(--muted)}
+.stepper{display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0;font-size:20px}
+.step{width:72px;height:72px;border-radius:50%;border:0;background:#fff;font-size:40px;font-weight:700;color:var(--green);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+output{font-size:44px;font-weight:800;min-width:60px;text-align:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:110px;background:var(--ink);color:#fff;padding:14px 22px;border-radius:14px;font-size:20px;z-index:30;max-width:90vw;text-align:center}
