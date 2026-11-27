@@ -49,8 +49,18 @@
         <button id="btn-import" class="big-btn">⬆️ Laden</button>
         <input id="file-import" type="file" accept="application/json" hidden>
       </div>
+      <h2>🛠️ Administrator</h2>
+      <button id="btn-admin" class="big-btn secondary">Alle Produkte verwalten</button>
       <button id="btn-lock" class="big-btn secondary">🔓 Verlassen</button>
     </div>
+  </section>
+
+  <!-- Administrator: alle angelegten Produkte, ohne Bestand -->
+  <section id="view-admin" class="view">
+    <h2>🛠️ Alle Produkte</h2>
+    <p class="hint">Löschen entfernt das Produkt samt seinen Codes auf allen Geräten.</p>
+    <div id="admin-list"></div>
+    <button id="btn-admin-close" class="big-btn secondary">Zurück</button>
   </section>
 
   <!-- Scanner -->

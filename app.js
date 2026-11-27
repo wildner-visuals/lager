@@ -69,7 +69,7 @@
     try {
       const remote = await cloudFetch();
       cloudOk = true;
-      if (remote && Array.isArray(remote.products) && remote.products.length) {
+      if (remote && Array.isArray(remote.products)) {
         data = remote;
         Store.save(data);
         renderAll();
@@ -277,6 +277,25 @@
       : '<p class="hint">Noch keine Bewegungen.</p>';
   }
 
+  // Administrator: alle angelegten Produkte mit ihren Codes, ohne Bestand
+  function renderAdmin() {
+    if (!unlocked) return;
+    $('admin-list').innerHTML = data.products.map((p) => `<div class="list-item">
+        <span class="ico">${esc(p.icon)}</span>
+        <div class="grow"><b>${esc(p.name)}</b><div class="sub">${(p.codes || []).length ? 'Code: ' + esc(p.codes.join(', ')) : 'kein Code hinterlegt'}</div></div>
+        <button data-del="${esc(p.id)}" aria-label="${esc(p.name)} löschen">🗑️</button></div>`).join('')
+      || '<p class="hint">Keine Produkte vorhanden.</p>';
+  }
+
+  function deleteProduct(id) {
+    const p = data.products.find((x) => x.id === id);
+    if (!p || !confirm(`„${p.name}“ wirklich löschen?`)) return false;
+    data.products = data.products.filter((x) => x.id !== id);
+    save(); renderAll();
+    toast('Gelöscht');
+    return true;
+  }
+
   function openEdit(p) {
     $('edit-title').textContent = p ? 'Produkt bearbeiten' : 'Neues Produkt';
     $('f-name').value = p ? p.name : '';
@@ -305,24 +324,21 @@
     toast('Gespeichert');
   }
   function deleteEdit() {
-    const id = $('edit').dataset.id;
-    if (!id || !confirm('Dieses Produkt wirklich löschen?')) return;
-    data.products = data.products.filter((p) => p.id !== id);
-    save(); $('edit').hidden = true; renderAll();
-    toast('Gelöscht');
+    if (deleteProduct($('edit').dataset.id)) $('edit').hidden = true;
   }
 
   // ---- Ansichten ------------------------------------------------------
   function showView(id) {
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === id));
-    document.querySelectorAll('.nav').forEach((b) => b.classList.toggle('active', b.dataset.view === id));
+    document.querySelectorAll('.nav').forEach((b) => b.classList.toggle('active', b.dataset.view === (id === 'view-admin' ? 'view-manage' : id)));
     if (id !== 'view-scan') stopScan();
     if (id === 'view-start') renderTiles();
     if (id === 'view-manage') renderManage();
+    if (id === 'view-admin') renderAdmin();
     window.scrollTo(0, 0);
   }
 
-  function renderAll() { renderTiles(); renderManage(); }
+  function renderAll() { renderTiles(); renderManage(); renderAdmin(); }
 
   // ---- Ereignisse -----------------------------------------------------
   $('search').addEventListener('input', renderTiles);
@@ -369,6 +385,11 @@
     openEdit(data.products.find((p) => p.id === b.dataset.edit));
   });
   $('btn-add').addEventListener('click', () => openEdit(null));
+  $('btn-admin').addEventListener('click', () => showView('view-admin'));
+  $('btn-admin-close').addEventListener('click', () => showView('view-manage'));
+  $('admin-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-del]'); if (b) deleteProduct(b.dataset.del);
+  });
   $('btn-edit-save').addEventListener('click', saveEdit);
   $('btn-edit-del').addEventListener('click', deleteEdit);
   $('btn-edit-close').addEventListener('click', () => ($('edit').hidden = true));
@@ -406,7 +427,10 @@
       if (hadController && !reloaded) { reloaded = true; location.reload(); }
     });
     navigator.serviceWorker.register('sw.js')
-      .then((reg) => reg.update())
+      .then((reg) => {
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+        return reg.update();
+      })
       .catch(() => {});
   }
 })();
