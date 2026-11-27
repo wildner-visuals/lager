@@ -8,10 +8,10 @@
   const QTY_STEPS = [1, 2, 5, 10];
 
   // Neuigkeiten-Fenster: bei jeder spürbaren Änderung Kennung und Punkte ersetzen
-  const NEWS_ID = '2026-11-28-regal';
+  const NEWS_ID = '2026-11-28-scan-iphone';
   const NEWS = [
-    ['UI-Redesign „Regalwand“:', 'Neuer Header als Vektorgrafik, jede Kachel ist als Regalfach gerendert.'],
-    ['Statuslogik unverändert:', 'Rot = unter Grenzwert, bestellen. Gelb = Vorwarnstufe. Grün = Bestand reicht.']
+    ['Scannen auf dem iPhone:', 'Safari kann keine Barcodes lesen. Jetzt übernimmt ein eingebauter Decoder (ZXing) – die Kamera geht an, Codes werden direkt erkannt.'],
+    ['Kein Umbau bei den Daten:', 'Bestand, Grenzen und Codes bleiben unverändert.']
   ];
 
   // Startbestand – Mengen und Grenzen bitte anpassen
@@ -321,7 +321,47 @@
   }
 
   // ---- Scanner --------------------------------------------------------
-  let stream = null, scanTimer = null, detector = null;
+  let stream = null, scanTimer = null, scanSession = 0;
+  // Safari (iPhone) kennt BarcodeDetector nicht – dann liest ZXing die Kamera-Bilder selbst.
+  let zxingPromise = null;
+  function loadZxing() {
+    if (window.ZXing) return Promise.resolve(window.ZXing);
+    if (!zxingPromise) zxingPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+      s.onload = () => resolve(window.ZXing);
+      s.onerror = () => { zxingPromise = null; reject(new Error('zxing')); };
+      document.head.appendChild(s);
+    });
+    return zxingPromise;
+  }
+  async function makeReader() {
+    if ('BarcodeDetector' in window) {
+      const det = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'qr_code', 'upc_a', 'code_39'] });
+      return async () => {
+        try { const c = await det.detect($('video')); return c.length ? c[0].rawValue : null; }
+        catch (e) { return null; }
+      };
+    }
+    const Z = await loadZxing();
+    const hints = new Map();
+    hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.CODE_128,
+      Z.BarcodeFormat.QR_CODE, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.CODE_39]);
+    const reader = new Z.MultiFormatReader();
+    reader.setHints(hints);
+    const canvas = document.createElement('canvas');
+    return async () => {
+      const v = $('video');
+      if (!v.videoWidth) return null;
+      canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+      canvas.getContext('2d').drawImage(v, 0, 0);
+      try {
+        const bitmap = new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(canvas)));
+        return reader.decode(bitmap).getText();
+      } catch (e) { return null; }
+      finally { reader.reset(); }
+    };
+  }
   function findByCode(code) {
     const c = norm(code);
     return data.products.find((p) => (p.codes || []).some((x) => norm(x) === c))
@@ -338,27 +378,39 @@
   async function startScan() {
     showView('view-scan');
     $('scan-manual').hidden = false;
-    if (!('BarcodeDetector' in window) || !navigator.mediaDevices) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       $('scan-status').textContent = 'Kamera-Scan geht hier nicht. Bitte unten eintippen.';
       return;
     }
+    const session = ++scanSession;
+    $('scan-status').textContent = 'Kamera startet …';
     try {
-      detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'qr_code', 'upc_a', 'code_39'] });
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      if (session !== scanSession) { s.getTracks().forEach((t) => t.stop()); return; }
+      stream = s;
       $('video').srcObject = stream;
       await $('video').play();
-      $('scan-status').textContent = 'Halte den Code vor die Kamera.';
-      scanTimer = setInterval(async () => {
-        try {
-          const codes = await detector.detect($('video'));
-          if (codes.length) handleCode(codes[0].rawValue);
-        } catch (e) { /* weiter versuchen */ }
-      }, 400);
     } catch (e) {
-      $('scan-status').textContent = 'Keine Kamera-Freigabe. Bitte unten eintippen.';
+      if (session === scanSession) $('scan-status').textContent = 'Keine Kamera-Freigabe. Bitte unten eintippen.';
+      return;
     }
+    let readFrame;
+    try {
+      readFrame = await makeReader();
+    } catch (e) {
+      if (session === scanSession) $('scan-status').textContent = 'Scanner konnte nicht geladen werden. Bitte unten eintippen.';
+      return;
+    }
+    if (session !== scanSession) return;
+    $('scan-status').textContent = 'Halte den Code vor die Kamera.';
+    scanTimer = setInterval(async () => {
+      if (session !== scanSession) return;
+      const code = await readFrame();
+      if (code && session === scanSession) handleCode(code);
+    }, 400);
   }
   function stopScan() {
+    scanSession++;
     clearInterval(scanTimer); scanTimer = null;
     if (stream) stream.getTracks().forEach((t) => t.stop());
     stream = null;
