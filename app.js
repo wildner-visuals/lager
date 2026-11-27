@@ -93,6 +93,11 @@
     pushCloud();
   };
   window.addEventListener('online', () => { if (cloudDirty) pushCloud(); else pullCloud(); });
+  // Gemeinsamer Stand alle 30 Sekunden holen, solange die App offen ist und nichts offen bearbeitet wird
+  setInterval(() => {
+    if (document.hidden || cloudDirty || document.querySelector('.sheet:not([hidden])')) return;
+    pullCloud();
+  }, 30000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pullCloud(); });
 
   // ---- Hilfen ---------------------------------------------------------
