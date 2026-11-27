@@ -392,5 +392,16 @@
   // ---- Start ----------------------------------------------------------
   renderTiles();
   pullCloud();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  // Automatische Aktualisierung: beim Öffnen nach einer neuen Version suchen und,
+  // wenn eine neue übernommen wurde, die Seite einmal neu laden (nicht beim Erststart).
+  if ('serviceWorker' in navigator) {
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController && !reloaded) { reloaded = true; location.reload(); }
+    });
+    navigator.serviceWorker.register('sw.js')
+      .then((reg) => reg.update())
+      .catch(() => {});
+  }
 })();
