@@ -8,8 +8,9 @@
   const QTY_STEPS = [1, 2, 5, 10];
 
   // Neuigkeiten-Fenster: bei jeder spürbaren Änderung Kennung und Punkte ersetzen
-  const NEWS_ID = '2026-11-28-scan-iphone';
+  const NEWS_ID = '2026-11-28-icon';
   const NEWS = [
+    ['App-Icon neu gerendert:', 'Gleiche Farben und Motive wie das Titelbild.'],
     ['Scannen auf dem iPhone:', 'Safari kann keine Barcodes lesen. Jetzt übernimmt ein eingebauter Decoder (ZXing) – die Kamera geht an, Codes werden direkt erkannt.'],
     ['Kein Umbau bei den Daten:', 'Bestand, Grenzen und Codes bleiben unverändert.']
   ];
