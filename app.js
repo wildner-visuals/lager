@@ -167,7 +167,7 @@
     $('qty').textContent = qty;
     $('sheet-link').hidden = !pendingCode;
   }
-  function closeSheet() { $('sheet').hidden = true; current = null; pendingCode = null; }
+  function closeSheet() { if (closePick) closePick(); $('sheet').hidden = true; current = null; pendingCode = null; }
 
   function linkCode(p, code) {
     if (!code) return;
@@ -178,30 +178,77 @@
   }
 
   // ---- Produkt-Auswahl (für unbekannte Codes) -------------------------
-  function pickProduct(title, onPick) {
-    const sheet = $('sheet');
+  let closePick = null;     // räumt die offene Auswahl wieder weg
+  function pickProduct(title, onPick, onNew) {
+    if (closePick) closePick();
     $('sheet-head').innerHTML = `<h2 class="sheet-head">${esc(title)}</h2>`;
     $('qty-minus').parentElement.hidden = true;
     $('btn-out').hidden = true; $('btn-in').hidden = true; $('sheet-link').hidden = true;
     const list = document.createElement('div');
     list.id = 'pick-list';
-    list.innerHTML = data.products.map((p) =>
+    list.innerHTML = '<button class="big-btn" data-new>➕ Neues Produkt anlegen</button>' + data.products.map((p) =>
       `<button class="big-btn secondary" data-pick="${esc(p.id)}">${esc(p.icon)} ${esc(p.name)}</button>`).join('');
     $('sheet-head').after(list);
-    list.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-pick]'); if (!b) return;
-      cleanupPick();
-      onPick(data.products.find((x) => x.id === b.dataset.pick));
-    }, { once: true });
-    $('btn-close').onclick = () => { cleanupPick(); closeSheet(); };
-    sheet.hidden = false;
-    function cleanupPick() {
+    closePick = () => {
+      closePick = null;
       list.remove();
       $('qty-minus').parentElement.hidden = false;
       $('btn-out').hidden = false; $('btn-in').hidden = false;
-      $('btn-close').onclick = closeSheet;
-      sheet.hidden = true;
-    }
+      $('sheet').hidden = true;
+    };
+    list.addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      closePick();
+      if ('new' in b.dataset) return onNew();
+      onPick(data.products.find((x) => x.id === b.dataset.pick));
+    });
+    $('sheet').hidden = false;
+    return list;
+  }
+
+  // Produktname zu einem Barcode in freien Datenbanken suchen (nur die Nummer wird gesendet)
+  const LOOKUP_HOSTS = ['world.openfoodfacts.org', 'world.openproductsfacts.org', 'world.openbeautyfacts.org'];
+  async function lookupName(code) {
+    const ask = async (host) => {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 6000);
+      try {
+        const r = await fetch(`https://${host}/api/v2/product/${code}.json?fields=product_name,product_name_de,brands,quantity`, { signal: ctrl.signal });
+        const p = (await r.json()).product || {};
+        const name = (p.product_name_de || p.product_name || '').trim();
+        if (!name) throw new Error('unbekannt');
+        const brand = String(p.brands || '').split(',')[0].trim();
+        const parts = [brand && !norm(name).includes(norm(brand)) ? brand : '', name, (p.quantity || '').replace(/\s+[e℮]$/, '').trim()];
+        return parts.filter(Boolean).join(' ');
+      } finally { clearTimeout(timer); }
+    };
+    try { return await Promise.any(LOOKUP_HOSTS.map(ask)); }
+    catch (e) { return null; }
+  }
+
+  // Unbekannter Code: vorhandenem Produkt zuordnen oder neu anlegen (Name wird online gesucht)
+  function unknownCode(code) {
+    const isBarcode = /^\d{8,14}$/.test(code);
+    let found = isBarcode ? '' : code;   // eingetippter Text ist selbst der Name
+    const list = pickProduct(isBarcode ? 'Neuer Code. Suche den Namen online …' : 'Nicht gefunden. Was ist es?',
+      (prod) => {
+        if (!prod) return;
+        if (isBarcode) linkCode(prod, code);
+        openSheet(prod);
+      },
+      () => {
+        openEdit(null);
+        $('f-name').value = found;
+        $('f-codes').value = isBarcode ? code : '';
+      });
+    if (!isBarcode) return;
+    lookupName(code).then((name) => {
+      if (!list.isConnected) return;     // Auswahl wurde inzwischen geschlossen
+      $('sheet-head').querySelector('h2').textContent = name
+        ? 'Neuer Code. Online gefunden:'
+        : 'Neuer Code, online nichts gefunden. Was ist es?';
+      if (name) { found = name; list.querySelector('[data-new]').textContent = `➕ „${name}“ neu anlegen`; }
+    });
   }
 
   // ---- Scanner --------------------------------------------------------
@@ -211,15 +258,13 @@
     return data.products.find((p) => (p.codes || []).some((x) => norm(x) === c))
       || data.products.find((p) => norm(p.name) === c);
   }
-  function handleCode(code) {
+  function handleCode(raw) {
+    const code = String(raw).trim();
     stopScan();
     showView('view-start');
     const p = findByCode(code);
     if (p) return openSheet(p);
-    pendingCode = code;
-    pickProduct('Dieser Code ist neu. Zu welchem Produkt gehört er?', (prod) => {
-      if (prod) { linkCode(prod, code); openSheet(prod); }
-    });
+    unknownCode(code);
   }
   async function startScan() {
     showView('view-scan');
