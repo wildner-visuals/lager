@@ -43,62 +43,108 @@
     save(data) { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
   };
   let data = Store.load();
-  let cloudDirty = false;
-  let cloudOk = true;
+  // „base“ = letzter Stand, den dieses Gerät mit dem Server gemeinsam hatte. Nur die Änderungen
+  // seitdem werden auf den Serverstand übertragen, nie der ganze Gerätestand.
+  const BASE_KEY = STORE_KEY + '.base';
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  let base;
+  try { base = JSON.parse(localStorage.getItem(BASE_KEY)); } catch (e) { base = null; }
+  const saveBase = () => localStorage.setItem(BASE_KEY, JSON.stringify(base));
+  if (!base || !Array.isArray(base.products)) { base = clone(data); saveBase(); }
+
+  // Vergleich unabhängig von der Reihenfolge der Felder (die Datenbank sortiert um)
+  const stable = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x))
+    ? Object.fromEntries(Object.keys(x).sort().map((key) => [key, x[key]])) : x);
+  const hasChanges = () => stable(data) !== stable(base);
+
+  // Überträgt die Änderungen von „from“ nach „to“ auf den Stand „onto“
+  function merge(from, to, onto) {
+    const index = (list) => new Map(list.map((p) => [p.id, p]));
+    const was = index(from.products), now = index(to.products), there = index(onto.products);
+    const products = [];
+    onto.products.forEach((r) => {
+      const b = was.get(r.id), l = now.get(r.id);
+      if (!l) { if (!b) products.push(r); return; }        // hier gelöscht → weg
+      if (!b) return products.push(r);
+      const p = { ...r };
+      ['name', 'icon', 'threshold', 'codes'].forEach((k) => { if (stable(l[k]) !== stable(b[k])) p[k] = l[k]; });
+      p.stock = Math.max(0, r.stock + l.stock - b.stock);  // Mengen werden addiert, nicht ersetzt
+      products.push(p);
+    });
+    // neu angelegte Produkte; was auf dem Server gelöscht wurde, bleibt gelöscht
+    to.products.forEach((p) => { if (!was.has(p.id) && !there.has(p.id)) products.push(p); });
+    const key = (m) => `${m.t}|${m.id}|${m.delta}`;
+    const known = new Set([...(from.log || []), ...(onto.log || [])].map(key));
+    const log = [...(to.log || []).filter((m) => !known.has(key(m))), ...(onto.log || [])]
+      .sort((x, y) => String(y.t).localeCompare(String(x.t))).slice(0, 200);
+    return { products, log };
+  }
 
   const cloudHeaders = { apikey: CLOUD.key, 'Content-Type': 'application/json' };
+  const cloudRow = `${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.main`;
   async function cloudFetch() {
-    const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.main&select=data`, { headers: cloudHeaders, cache: 'no-store' });
+    const r = await fetch(`${cloudRow}&select=data,updated_at`, { headers: cloudHeaders, cache: 'no-store' });
     if (!r.ok) throw new Error('lesen');
     const rows = await r.json();
-    return rows[0] ? rows[0].data : null;
+    if (!rows[0]) throw new Error('keine Zeile');
+    return rows[0];
   }
-  async function cloudPush() {
-    const r = await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.main`, {
+  // Schreibt nur, wenn seit dem Lesen niemand anderes geschrieben hat
+  async function cloudWrite(value, seen) {
+    const guard = seen ? `eq.${encodeURIComponent(seen)}` : 'is.null';
+    const r = await fetch(`${cloudRow}&updated_at=${guard}`, {
       method: 'PATCH',
-      headers: { ...cloudHeaders, Prefer: 'return=minimal' },
-      body: JSON.stringify({ data, updated_at: new Date().toISOString() })
+      headers: { ...cloudHeaders, Prefer: 'return=representation' },
+      body: JSON.stringify({ data: value, updated_at: new Date().toISOString() })
     });
     if (!r.ok) throw new Error('schreiben');
-    cloudDirty = false; cloudOk = true;
+    return (await r.json()).length > 0;
   }
   function syncStatus(msg) { const el = $('sync'); if (el) el.textContent = msg; }
 
-  // Beim Öffnen und beim Zurückkehren in die App: gemeinsamen Stand holen (der Server gewinnt, wenn er Daten hat)
-  async function pullCloud() {
-    try {
-      const remote = await cloudFetch();
-      cloudOk = true;
-      if (remote && Array.isArray(remote.products)) {
-        data = remote;
-        Store.save(data);
-        renderAll();
-      } else {
-        await cloudPush();
-      }
-      syncStatus('');
-    } catch (e) {
-      cloudOk = false;
-      syncStatus('Keine Verbindung – Stand nur auf diesem Gerät');
+  async function syncOnce() {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const row = await cloudFetch();
+      const remote = row.data && Array.isArray(row.data.products) ? row.data : null;
+      const sent = clone(data);
+      const pending = !remote || stable(sent) !== stable(base);
+      const merged = remote ? (pending ? merge(base, sent, remote) : remote) : sent;
+      if (pending && !(await cloudWrite(merged, row.updated_at))) continue;  // jemand war schneller
+      data = merge(sent, data, merged);   // inzwischen Getipptes bleibt erhalten
+      base = clone(merged);
+      Store.save(data); saveBase();
+      return;
     }
+    throw new Error('zu viele gleichzeitige Änderungen');
   }
-  async function pushCloud() {
-    try { await cloudPush(); syncStatus(''); }
-    catch (e) { cloudDirty = true; cloudOk = false; syncStatus('Nicht gesendet – wird erneut versucht'); }
+
+  // Immer nur ein Abgleich zur Zeit
+  let syncing = null, again = false;
+  function sync() {
+    if (syncing) { again = true; return syncing; }
+    syncing = (async () => {
+      try {
+        do { again = false; await syncOnce(); } while (again || hasChanges());
+        syncStatus('');
+        refreshOpen();
+      } catch (e) {
+        syncStatus(hasChanges() ? 'Nicht gesendet – wird erneut versucht' : 'Keine Verbindung – Stand nur auf diesem Gerät');
+      } finally { syncing = null; }
+    })();
+    return syncing;
   }
 
   const save = () => {
     Store.save(data);
-    cloudDirty = true;
-    pushCloud();
+    sync();
   };
-  window.addEventListener('online', () => { if (cloudDirty) pushCloud(); else pullCloud(); });
-  // Gemeinsamer Stand alle 30 Sekunden holen, solange die App offen ist und nichts offen bearbeitet wird
+  window.addEventListener('online', sync);
+  // Alle 30 Sekunden abgleichen, solange die App offen ist und nichts offen bearbeitet wird
   setInterval(() => {
-    if (document.hidden || cloudDirty || document.querySelector('.sheet:not([hidden])')) return;
-    pullCloud();
+    if (document.hidden || document.querySelector('.sheet:not([hidden])')) return;
+    sync();
   }, 30000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) pullCloud(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
 
   // ---- Hilfen ---------------------------------------------------------
   const $ = (id) => document.getElementById(id);
@@ -126,14 +172,29 @@
     data.log = data.log.slice(0, 200);
   }
 
-  function move(p, delta) {
+  const byId = (id) => data.products.find((p) => p.id === id);
+  // Nach einem Abgleich Anzeige und offenes Produkt auf den neuen Stand bringen
+  function refreshOpen() {
+    renderAll();
+    if (!current || closePick) return;
+    const fresh = byId(current.id);
+    if (!fresh) return closeSheet();
+    current = fresh;
+    renderSheet();
+  }
+
+  function move(target, delta) {
+    const p = byId(target.id);
+    if (!p) return toast('Das Produkt gibt es nicht mehr');
     const before = p.stock;
     p.stock = Math.max(0, p.stock + delta);
     const real = p.stock - before;
     if (real === 0) return toast('Nichts mehr da zum Herausnehmen');
     logMove(p, real);
+    current = current && p;
     save();
     renderAll();
+    if (current) renderSheet();
     toast(real < 0 ? `${-real} × ${p.name} entnommen` : `${real} × ${p.name} eingeräumt`);
   }
 
@@ -169,8 +230,9 @@
   }
   function closeSheet() { if (closePick) closePick(); $('sheet').hidden = true; current = null; pendingCode = null; }
 
-  function linkCode(p, code) {
-    if (!code) return;
+  function linkCode(target, code) {
+    const p = byId(target.id);
+    if (!code || !p) return;
     data.products.forEach((x) => (x.codes = (x.codes || []).filter((c) => c !== code)));
     p.codes = [...(p.codes || []), code];
     save();
@@ -350,6 +412,7 @@
     $('f-codes').value = p ? (p.codes || []).join(', ') : '';
     $('btn-edit-del').hidden = !p;
     $('edit').hidden = false;
+    $('edit').dataset.stock = $('f-stock').value;
     $('edit').dataset.id = p ? p.id : '';
   }
   function saveEdit() {
@@ -363,8 +426,13 @@
       threshold: Math.max(0, parseInt($('f-threshold').value, 10) || 0),
       codes: $('f-codes').value.split(',').map((s) => s.trim()).filter(Boolean)
     };
-    if (id) Object.assign(data.products.find((p) => p.id === id), vals);
-    else data.products.push({ id: uid(), ...vals });
+    if (id) {
+      const p = byId(id);
+      if (!p) { $('edit').hidden = true; renderAll(); return toast('Das Produkt wurde inzwischen gelöscht'); }
+      // unveränderte Menge nicht zurückschreiben, falls inzwischen jemand entnommen hat
+      if (String(vals.stock) === $('edit').dataset.stock) delete vals.stock;
+      Object.assign(p, vals);
+    } else data.products.push({ id: uid(), ...vals });
     save(); $('edit').hidden = true; renderAll();
     toast('Gespeichert');
   }
@@ -462,7 +530,7 @@
 
   // ---- Start ----------------------------------------------------------
   renderTiles();
-  pullCloud();
+  sync();
   // Automatische Aktualisierung: beim Öffnen nach einer neuen Version suchen und,
   // wenn eine neue übernommen wurde, die Seite einmal neu laden (nicht beim Erststart).
   if ('serviceWorker' in navigator) {
