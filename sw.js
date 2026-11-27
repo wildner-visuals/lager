@@ -1,11 +1,11 @@
 // Version erhöhen, wenn sich Dateien ändern
-const VERSION = 'lager-v7';
+const VERSION = 'lager-v8';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('lager-') && k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 // Eigene Dateien: erst aus dem Netz (damit Änderungen sofort ankommen), sonst aus dem Speicher.
 // Datenbank-Anfragen (anderer Server) werden nicht angefasst.
