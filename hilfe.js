@@ -1,9 +1,9 @@
-/* Hilfe-Fenster: dezenter Knopf unten rechts, Nachricht geht an Julius (Telegram + E-Mail).
+/* Hilfe-Fenster: dezenter Knopf oben rechts, Nachricht geht an Julius (Telegram + E-Mail).
    Passt sich dem Design der jeweiligen App an (Farben, Schrift aus den CSS-Variablen).
-   Einbinden: <script src="hilfe.js" data-app="Name" data-accent="#hex" data-bottom="84" defer></script>
+   Einbinden: <script src="hilfe.js" data-app="Name" data-accent="#hex" defer></script>
      data-app     Name der App (steht in der Nachricht)
      data-accent  Akzentfarbe der App (Hex)
-     data-bottom  Abstand des Knopfs vom unteren Rand in px (damit er nicht auf Leisten liegt)
+   Der Knopf sitzt oben rechts in der Ecke (wie bei den meisten Apps).
    Identische Datei in allen Apps unter Apps/. Bei Änderung in allen Kopien angleichen. */
 (() => {
   'use strict';
@@ -11,7 +11,6 @@
   const script = document.currentScript;
   const APP = (script && script.dataset.app) || document.title;
   const ACCENT = (script && script.dataset.accent) || '#2563eb';
-  const BOTTOM = parseInt((script && script.dataset.bottom) || '16', 10);
 
   /* Farben und Schrift aus der App übernehmen */
   const root = getComputedStyle(document.documentElement);
@@ -29,7 +28,7 @@
   const HEAD = pick('--display') || FONT;
 
   const css = `
-.hh-btn{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:calc(${BOTTOM}px + env(safe-area-inset-bottom));z-index:9000;width:34px;height:34px;border-radius:50%;border:1px solid ${LINE};background:${SURFACE};color:${MUTED};font:600 15px/1 ${FONT};opacity:.85;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.hh-btn{position:fixed;right:max(14px,env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));z-index:9000;width:30px;height:30px;border-radius:50%;border:1px solid ${LINE};background:${SURFACE};color:${MUTED};font:600 15px/1 ${FONT};opacity:.85;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .hh-btn:active{transform:scale(.95)}
 .hh-back{position:fixed;inset:0;z-index:9001;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
 .hh-card{box-sizing:border-box;width:100%;max-width:560px;max-height:88vh;overflow:auto;padding:12px 20px calc(20px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;background:${SURFACE};color:${FG};font:16px/1.45 ${FONT}}
