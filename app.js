@@ -8,12 +8,11 @@
   const QTY_STEPS = [1, 2, 5, 10];
 
   // Neuigkeiten-Fenster: bei jeder spürbaren Änderung Kennung und Punkte ersetzen
-  const NEWS_ID = '2026-11-28-hilfe';
+  const NEWS_ID = '2026-11-28-push-neustart';
   const NEWS = [
-    ['Hilfe-Knopf unten rechts:', 'Schreib direkt, was nicht klappt. Die Nachricht landet per Telegram und E-Mail bei Julius, mit App und Uhrzeit.'],
-    ['App-Icon neu gerendert:', 'Gleiche Farben und Motive wie das Titelbild.'],
-    ['Scannen auf dem iPhone:', 'Safari kann keine Barcodes lesen. Jetzt übernimmt ein eingebauter Decoder (ZXing) – die Kamera geht an, Codes werden direkt erkannt.'],
-    ['Kein Umbau bei den Daten:', 'Bestand, Grenzen und Codes bleiben unverändert.']
+    ['Erinnerungen aufs Handy:', 'Unten links kannst du Push-Benachrichtigungen aktivieren. Die Anmeldung wird beim Server gespeichert und beim Öffnen geprüft.'],
+    ['Support oben rechts:', 'Für Wünsche, Fehler und Fragen bitte den Support-Knopf nutzen. Das ist der direkte Weg zu Julius.'],
+    ['Anmeldung neu:', 'Alle Geräte melden sich einmal neu an, damit der Schlüssel überall stimmt.'],
   ];
 
   // Startbestand – Mengen und Grenzen bitte anpassen
