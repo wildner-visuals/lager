@@ -1,5 +1,5 @@
 // Version erhöhen, wenn sich Dateien ändern
-const VERSION = 'lager-v34';
+const VERSION = 'lager-v35';
 const FILES = ['./', 'hilfe.js', 'index.html', 'style.css', 'kopf.svg', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
