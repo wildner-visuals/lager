@@ -3,7 +3,7 @@
   const URL_ABO = 'https://xgutbeabqmyvmvlgqlwu.supabase.co/functions/v1/push-abo';
   const script = document.querySelector('script[data-app]');
   const APP = script ? script.dataset.app : '';
-  const MERKER = 'push.v2.aktiv.' + APP;
+  const MERKER = 'push.v3.aktiv.' + APP;
 
   function zuBytes(s) {
     const b = (s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
