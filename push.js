@@ -72,6 +72,11 @@
     b.textContent = 'Erinnerungen aufs Handy';
     b.style.cssText = 'position:fixed;left:16px;bottom:calc(env(safe-area-inset-bottom) + 88px);z-index:12;padding:10px 14px;border-radius:999px;border:0;background:var(--accent,#b5651d);color:var(--accent-ink,#fff);font:600 .88rem system-ui,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.25);cursor:pointer';
     b.addEventListener('click', async () => {
+      // Gesperrt: der Browser fragt dann nicht mehr, nur die Einstellungen helfen
+      if ('Notification' in window && Notification.permission === 'denied') {
+        b.textContent = 'Mitteilungen sind gesperrt: in den Einstellungen erlauben';
+        return;
+      }
       b.disabled = true;
       b.textContent = 'Wird eingerichtet ...';
       let ok = false;
