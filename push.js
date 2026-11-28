@@ -11,6 +11,7 @@
   const RESET = 'push.reset.v6.' + APP;
   const HINWEIS = 'push.hinweis.v7.' + APP;
   const NEIN = 'push.nein.' + APP;   // speichert die Anfrage-Runde, in der „Nein“ gesagt wurde
+  const GERAET = 'push.geraet';      // zufällige Kennung dieses Geräts, nur zum Zählen
 
   function unterstuetzt() {
     return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
@@ -29,14 +30,41 @@
 
   function merken() { try { localStorage.setItem(MERKER, '1'); } catch (e) {} }
   function lieseNein() { try { return localStorage.getItem(NEIN); } catch (e) { return null; } }
-  function merkeNein() { try { localStorage.setItem(NEIN, ANFRAGE); } catch (e) {} }
+
+  // Zufällige Geräte-Kennung nur zum Zählen (kein Name, keine Adresse), bleibt im Gerät
+  function geraetId() {
+    try {
+      let id = localStorage.getItem(GERAET);
+      if (!id) {
+        id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+        localStorage.setItem(GERAET, id);
+      }
+      return id;
+    } catch (e) { return ''; }
+  }
+
+  // Entscheidung an den Server zählen: 'angenommen', 'abgelehnt' oder 'gesperrt'. Fehler stören nichts.
+  function meldeEntscheidung(wert) {
+    const geraet = geraetId();
+    if (!APP || !geraet) return;
+    fetch(URL_ABO, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entscheidung: { app: APP, geraet, wert } }),
+    }).catch(() => {});
+  }
+
+  function merkeNein() {
+    try { localStorage.setItem(NEIN, ANFRAGE); } catch (e) {}
+    meldeEntscheidung('abgelehnt');
+  }
 
   // Abo beim Server speichern (Abo-Objekt aus dem Browser)
   async function speichern(sub) {
     const r = await fetch(URL_ABO, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ app: APP, subscription: sub.toJSON() }),
+      body: JSON.stringify({ app: APP, subscription: sub.toJSON(), geraet: geraetId() }),
     });
     if (r.ok) merken();
     return r.ok;
@@ -109,6 +137,8 @@
 
   function knopf() {
     if (!APP || !('PushManager' in window)) return;
+    // Gesperrt im Browser: einmal als gesperrt zählen (Knopf gibt es dann nicht)
+    if ('Notification' in window && Notification.permission === 'denied') meldeEntscheidung('gesperrt');
     // Hinweis erscheint allen einmal, auch wenn schon angemeldet; der Knopf nur, wenn noch keine Anmeldung besteht
     resetEinmal().then(() => pruefen()).then((ok) => zeigeHinweis(() => { if (!ok) zeigeKnopf(); })).catch(() => zeigeHinweis(() => zeigeKnopf()));
   }
