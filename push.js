@@ -1,8 +1,9 @@
 /* Web-Push-Anmeldung, gemeinsam für alle Apps. Der öffentliche Schlüssel kommt vom Server. */
 (function () {
   const URL_ABO = 'https://xgutbeabqmyvmvlgqlwu.supabase.co/functions/v1/push-abo';
-  const script = document.querySelector('script[data-app]');
-  const APP = script ? script.dataset.app : '';
+  // Name kommt vom eigenen <script src="push.js" data-app="...">-Tag, nicht von anderen Skripten der Seite
+  const script = document.currentScript || document.querySelector('script[src$="push.js"]');
+  const APP = script ? (script.dataset.app || '') : '';
   const MERKER = 'push.v5.aktiv.' + APP;
 
   function zuBytes(s) {
