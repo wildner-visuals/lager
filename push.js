@@ -46,6 +46,23 @@
 
   window.pushAnmelden = anmelden;
 
+  // Tagesstatus an den Server: nur ein Datum pro Gerät (erledigt heute), keine Inhalte.
+  // erledigt=false oder datum=null heißt: heute noch offen.
+  window.pushStatusMelden = async function (erledigt, datum) {
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || Notification.permission !== 'granted') return false;
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) return false;
+      const r = await fetch(URL_ABO, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: { endpoint: sub.endpoint, erledigt_datum: erledigt ? datum : null } }),
+      });
+      return r.ok;
+    } catch (e) { return false; }
+  };
+
   // Prüft das vorhandene Abo: passt es zum aktuellen Server-Schlüssel, wird es (erneut) beim Server gespeichert.
   // Passt es nicht (alter Schlüssel), wird es entfernt, damit neu angemeldet werden kann.
   // Gibt true zurück, wenn alles in Ordnung ist und kein Knopf nötig ist.
