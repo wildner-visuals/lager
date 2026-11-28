@@ -4,7 +4,9 @@
   // Name kommt vom eigenen <script src="push.js" data-app="...">-Tag, nicht von anderen Skripten der Seite
   const script = document.currentScript || document.querySelector('script[src$="push.js"]');
   const APP = script ? (script.dataset.app || '') : '';
-  const MERKER = 'push.v5.aktiv.' + APP;
+  const MERKER = 'push.v6.aktiv.' + APP;
+  const RESET = 'push.reset.v6.' + APP;
+  const HINWEIS = 'push.hinweis.v6.' + APP;
 
   function zuBytes(s) {
     const b = (s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
@@ -81,12 +83,50 @@
     return await speichern(sub);
   }
 
+  // Einmalig je Gerät und App: vorhandene Anmeldungen entfernen, damit sich alles neu anmeldet
+  async function resetEinmal() {
+    try {
+      if (localStorage.getItem(RESET) === '1') return;
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) await sub.unsubscribe();
+      }
+      localStorage.setItem(RESET, '1');
+    } catch (e) {}
+  }
+
   function knopf() {
     if (!APP || !('PushManager' in window)) return;
-    pruefen().then((ok) => { if (!ok) zeigeKnopf(); }).catch(() => zeigeKnopf());
+    resetEinmal().then(() => pruefen()).then((ok) => { if (!ok) zeigeKnopf(); }).catch(() => zeigeKnopf());
+  }
+
+  // Einmaliger Hinweis: Support oben, Benachrichtigung unten links
+  function zeigeHinweis(danach) {
+    try { if (localStorage.getItem(HINWEIS) === '1') return danach(); } catch (e) {}
+    const box = document.createElement('div');
+    box.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 64px);z-index:20;padding:14px 16px;border-radius:14px;background:var(--surface,#fff);color:var(--ink,#111);font:500 .9rem/1.45 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.25)';
+    const text = document.createElement('div');
+    text.textContent = 'Kurz vorab: Für eine bessere Kommunikation nutz bitte oben den Support-Knopf, wenn du Wünsche, Fehler oder Fragen hast. Und damit du auf dem Laufenden bleibst, kannst du unten links „Erinnerungen aufs Handy“ aktivieren. Das ist kein Virus, nur eine Push-Benachrichtigung.';
+    const ok = document.createElement('button');
+    ok.type = 'button';
+    ok.textContent = 'Verstanden';
+    ok.style.cssText = 'margin-top:10px;padding:8px 14px;border-radius:999px;border:0;background:var(--accent,#b5651d);color:var(--accent-ink,#fff);font:600 .88rem system-ui,sans-serif;cursor:pointer';
+    ok.addEventListener('click', () => {
+      try { localStorage.setItem(HINWEIS, '1'); } catch (e) {}
+      box.remove();
+      danach();
+    });
+    box.append(text, ok);
+    document.body.append(box);
   }
 
   function zeigeKnopf() {
+    if (document.querySelector('[data-push-knopf]')) return;
+    zeigeHinweis(() => baueKnopf());
+  }
+
+  function baueKnopf() {
     if (document.querySelector('[data-push-knopf]')) return;
     const b = document.createElement('button');
     b.type = 'button';
