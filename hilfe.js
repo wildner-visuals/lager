@@ -10,22 +10,29 @@
   const URL_HILFE = 'https://xgutbeabqmyvmvlgqlwu.supabase.co/functions/v1/hilfe';
   const script = document.currentScript;
   const APP = (script && script.dataset.app) || document.title;
-  const ACCENT = (script && script.dataset.accent) || '#2563eb';
+  const ACCENT_FALLBACK = (script && script.dataset.accent) || '#2563eb';
 
-  /* Farben und Schrift aus der App übernehmen */
-  const root = getComputedStyle(document.documentElement);
-  const body = getComputedStyle(document.body);
+  /* Farben und Schrift direkt aus der App lesen (live, also auch bei Hell/Dunkel-Wechsel).
+     Die Werte landen in eigenen Variablen --hh-*, auf die das CSS unten zeigt. */
   const pick = (...names) => {
+    const root = getComputedStyle(document.documentElement);
     for (const n of names) { const v = root.getPropertyValue(n).trim(); if (v) return v; }
     return '';
   };
-  const bgBody = body.backgroundColor && body.backgroundColor !== 'rgba(0, 0, 0, 0)' ? body.backgroundColor : '';
-  const SURFACE = pick('--card', '--surface', '--raised', '--paper') || bgBody || '#ffffff';
-  const FG = body.color || '#111111';
-  const MUTED = pick('--muted', '--mute') || 'rgba(127,127,127,1)';
-  const LINE = pick('--line') || 'rgba(127,127,127,.35)';
-  const FONT = body.fontFamily || 'system-ui, sans-serif';
-  const HEAD = pick('--display') || FONT;
+  const SURFACE = 'var(--hh-surface)', FG = 'var(--hh-fg)', MUTED = 'var(--hh-muted)';
+  const LINE = 'var(--hh-line)', ACCENT = 'var(--hh-accent)', FONT = 'var(--hh-font)', HEAD = 'var(--hh-head)';
+  function farben() {
+    const body = getComputedStyle(document.body);
+    const bgBody = body.backgroundColor && body.backgroundColor !== 'rgba(0, 0, 0, 0)' ? body.backgroundColor : '';
+    const set = (k, v) => document.documentElement.style.setProperty(k, v);
+    set('--hh-surface', pick('--surface', '--raised', '--paper', '--bg', '--card') || bgBody || '#ffffff');
+    set('--hh-fg', pick('--text', '--ink') || body.color || '#111111');
+    set('--hh-muted', pick('--muted', '--mute') || 'rgba(127,127,127,1)');
+    set('--hh-line', pick('--line', '--border') || 'rgba(127,127,127,.35)');
+    set('--hh-accent', pick('--accent') || ACCENT_FALLBACK);
+    set('--hh-font', body.fontFamily || 'system-ui, sans-serif');
+    set('--hh-head', pick('--display') || body.fontFamily || 'system-ui, sans-serif');
+  }
 
   const css = `
 .hh-btn{position:fixed;right:max(14px,env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));z-index:9000;height:30px;padding:0 12px;border-radius:15px;white-space:nowrap;border:1px solid ${LINE};background:${SURFACE};color:${MUTED};font:600 13px/1 ${FONT};letter-spacing:.02em;opacity:.85;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
@@ -58,6 +65,7 @@
   };
 
   function oeffnen() {
+    farben();
     const back = el('div', { className: 'hh-back' });
     const card = el('div', { className: 'hh-card' });
     card.setAttribute('role', 'dialog');
@@ -124,6 +132,7 @@
   function start() {
     const style = el('style');
     style.textContent = css;
+    farben();
     document.head.append(style);
     const knopf = el('button', { className: 'hh-btn', type: 'button', title: 'Support' }, 'Support');
     knopf.setAttribute('aria-label', 'Support öffnen');
