@@ -46,26 +46,30 @@
 
   window.pushAnmelden = anmelden;
 
-  // Hat der Browser schon ein Abo (Erlaubnis erteilt, aber Speichern vorher gescheitert)?
-  // Dann beim Server nachholen und den Knopf gar nicht erst zeigen.
-  async function vorhandenesAboNachholen() {
-    try {
-      if (Notification.permission !== 'granted') return false;
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (!sub) return false;
-      return await speichern(sub);
-    } catch (e) { return false; }
+  // Prüft das vorhandene Abo: passt es zum aktuellen Server-Schlüssel, wird es (erneut) beim Server gespeichert.
+  // Passt es nicht (alter Schlüssel), wird es entfernt, damit neu angemeldet werden kann.
+  // Gibt true zurück, wenn alles in Ordnung ist und kein Knopf nötig ist.
+  async function pruefen() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return false;
+    if (Notification.permission !== 'granted') return false;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return false;
+    const key = await holeSchluessel();
+    if (!key) return false; // offline: nichts verwerfen, lieber Knopf zeigen
+    const neu = zuBytes(key);
+    const alt = sub.options && sub.options.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey) : null;
+    const passt = !!alt && alt.length === neu.length && alt.every((x, i) => x === neu[i]);
+    if (!passt) { await sub.unsubscribe(); return false; }
+    return await speichern(sub);
   }
 
   function knopf() {
     if (!APP || !('PushManager' in window)) return;
-    try { if (localStorage.getItem(MERKER) === '1') return; } catch (e) {}
-    vorhandenesAboNachholen().then((ok) => { if (!ok) zeigeKnopf(); });
+    pruefen().then((ok) => { if (!ok) zeigeKnopf(); }).catch(() => zeigeKnopf());
   }
 
   function zeigeKnopf() {
-    try { if (localStorage.getItem(MERKER) === '1') return; } catch (e) {}
     if (document.querySelector('[data-push-knopf]')) return;
     const b = document.createElement('button');
     b.type = 'button';
