@@ -55,6 +55,9 @@
 .hh-send:disabled{opacity:.5}
 .hh-cancel{background:transparent;color:${FG};border:1px solid ${LINE}!important}
 .hh-status{min-height:20px;margin-top:10px;font-size:14px;color:${MUTED}}
+.hh-stars{display:flex;gap:8px;margin:0 0 14px}
+.hh-stars button{flex:1;padding:10px 0;border:1px solid ${LINE};border-radius:12px;background:transparent;color:${FG};font:600 16px ${FONT};cursor:pointer}
+.hh-stars button[aria-pressed="true"]{background:${ACCENT};color:#fff;border-color:transparent}
 `;
 
   const el = (tag, attrs = {}, text) => {
@@ -129,6 +132,67 @@
     text.focus();
   }
 
+  /* Umfrage: alle 3 Tage einmal, nach dem ersten Öffnen. Landet im Support-Speicher mit Präfix [Umfrage]. */
+  const UMFRAGE_TAGE = 3;
+  const UMFRAGE_KEY = 'umfrage.' + APP;
+  function umfrageFaellig() {
+    const now = Date.now();
+    const last = parseInt(localStorage.getItem(UMFRAGE_KEY) || '0', 10);
+    if (!last) { localStorage.setItem(UMFRAGE_KEY, String(now)); return false; }
+    return now - last >= UMFRAGE_TAGE * 86400000;
+  }
+  function umfrageOeffnen() {
+    const back = el('div', { className: 'hh-back' });
+    const card = el('div', { className: 'hh-card' });
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-modal', 'true');
+    card.setAttribute('aria-label', 'Umfrage');
+    const head = el('div', { className: 'hh-head' });
+    head.append(el('h2', {}, 'Kurze Frage'), el('i'));
+    const stars = el('div', { className: 'hh-stars' });
+    let wert = 0;
+    for (let n = 1; n <= 5; n++) {
+      const b = el('button', { type: 'button' }, String(n));
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => {
+        wert = n;
+        stars.querySelectorAll('button').forEach((x, i) => x.setAttribute('aria-pressed', String(i < n)));
+      });
+      stars.append(b);
+    }
+    const text = el('textarea', { placeholder: 'Was gefällt dir, und was sollen wir verbessern oder ändern?', maxLength: 1000 });
+    const status = el('div', { className: 'hh-status' });
+    const spaeter = el('button', { className: 'hh-cancel', type: 'button' }, 'Später');
+    const senden = el('button', { className: 'hh-send', type: 'button' }, 'Abschicken');
+    const row = el('div', { className: 'hh-row' });
+    row.append(spaeter, senden);
+    card.append(el('div', { className: 'hh-grab' }), head,
+      el('p', {}, `Wie zufrieden bist du mit ${APP} (1 = gar nicht, 5 = sehr)?`), stars, text, row, status);
+    back.append(card);
+    document.body.append(back);
+    const zu = () => { localStorage.setItem(UMFRAGE_KEY, String(Date.now())); back.remove(); };
+    spaeter.addEventListener('click', zu);
+    back.addEventListener('click', (e) => { if (e.target === back) zu(); });
+    senden.addEventListener('click', async () => {
+      if (!wert && !text.value.trim()) { status.textContent = 'Tipp kurz eine Zahl oder schreib einen Satz.'; return; }
+      senden.disabled = true; status.textContent = 'Wird gesendet …';
+      const msg = `[Umfrage] Zufriedenheit ${wert || '–'}/5\n\n${text.value.trim() || '(kein Text)'}`;
+      try {
+        const r = await fetch(URL_HILFE, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ app: APP, name: '', message: msg, page: location.pathname + location.search, website: '' }),
+        });
+        if (!r.ok) throw new Error('fehler');
+        status.textContent = 'Danke! Das hilft sehr.';
+        localStorage.setItem(UMFRAGE_KEY, String(Date.now()));
+        setTimeout(() => back.remove(), 1500);
+      } catch (e) {
+        senden.disabled = false;
+        status.textContent = 'Das hat nicht geklappt. Versuch es später nochmal.';
+      }
+    });
+  }
+
   function start() {
     const style = el('style');
     style.textContent = css;
@@ -138,6 +202,7 @@
     knopf.setAttribute('aria-label', 'Support öffnen');
     knopf.addEventListener('click', oeffnen);
     document.body.append(knopf);
+    setTimeout(() => { if (!document.querySelector('.hh-back') && umfrageFaellig()) umfrageOeffnen(); }, 5000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
