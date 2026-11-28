@@ -1,5 +1,5 @@
 // Version erhöhen, wenn sich Dateien ändern
-const VERSION = 'lager-v19';
+const VERSION = 'lager-v20';
 const FILES = ['./', 'hilfe.js', 'index.html', 'style.css', 'kopf.svg', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
@@ -19,4 +19,15 @@ self.addEventListener('fetch', (e) => {
       return r;
     }).catch(() => caches.match(e.request))
   );
+});
+
+// --- Web-Push (gemeinsam) ---
+self.addEventListener('push', (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) {}
+  event.waitUntil(self.registration.showNotification(d.title || 'Nachricht', { body: d.text || '', data: { url: d.url || '/' } }));
+});
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow((event.notification.data && event.notification.data.url) || '/'));
 });
