@@ -1,4 +1,4 @@
-/* Hilfe-Fenster: dezenter Knopf oben rechts, Nachricht geht an Julius (Telegram + E-Mail).
+/* Support-Fenster: dezenter Knopf oben rechts, Nachricht geht an Julius (Telegram + E-Mail).
    Passt sich dem Design der jeweiligen App an (Farben, Schrift aus den CSS-Variablen).
    Einbinden: <script src="hilfe.js" data-app="Name" data-accent="#hex" defer></script>
      data-app     Name der App (steht in der Nachricht)
@@ -28,7 +28,7 @@
   const HEAD = pick('--display') || FONT;
 
   const css = `
-.hh-btn{position:fixed;right:max(14px,env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));z-index:9000;width:30px;height:30px;border-radius:50%;border:1px solid ${LINE};background:${SURFACE};color:${MUTED};font:600 15px/1 ${FONT};opacity:.85;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.hh-btn{position:fixed;right:max(14px,env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));z-index:9000;height:30px;padding:0 12px;border-radius:15px;white-space:nowrap;border:1px solid ${LINE};background:${SURFACE};color:${MUTED};font:600 13px/1 ${FONT};letter-spacing:.02em;opacity:.85;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .hh-btn:active{transform:scale(.95)}
 .hh-back{position:fixed;inset:0;z-index:9001;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
 .hh-card{box-sizing:border-box;width:100%;max-width:560px;max-height:88vh;overflow:auto;padding:12px 20px calc(20px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;background:${SURFACE};color:${FG};font:16px/1.45 ${FONT}}
@@ -62,10 +62,10 @@
     const card = el('div', { className: 'hh-card' });
     card.setAttribute('role', 'dialog');
     card.setAttribute('aria-modal', 'true');
-    card.setAttribute('aria-label', 'Hilfe');
+    card.setAttribute('aria-label', 'Support');
 
     const head = el('div', { className: 'hh-head' });
-    head.append(el('h2', {}, 'Hilfe'), el('i'));
+    head.append(el('h2', {}, 'Support'), el('i'));
     const name = el('input', { placeholder: 'Dein Name (optional)', maxLength: 60 });
     const text = el('textarea', { placeholder: 'Was klappt nicht? Schreib einfach los.', maxLength: 2000 });
     const hp = el('input', { className: 'hh-hp', tabIndex: -1, autocomplete: 'off' });
@@ -125,8 +125,8 @@
     const style = el('style');
     style.textContent = css;
     document.head.append(style);
-    const knopf = el('button', { className: 'hh-btn', type: 'button', title: 'Hilfe' }, '?');
-    knopf.setAttribute('aria-label', 'Hilfe öffnen');
+    const knopf = el('button', { className: 'hh-btn', type: 'button', title: 'Support' }, 'Support');
+    knopf.setAttribute('aria-label', 'Support öffnen');
     knopf.addEventListener('click', oeffnen);
     document.body.append(knopf);
   }
