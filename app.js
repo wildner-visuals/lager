@@ -13,7 +13,6 @@
     ['Erinnerungen aufs Handy:', 'Unten links kannst du Push-Benachrichtigungen aktivieren. Die Anmeldung wird beim Server gespeichert und beim Öffnen geprüft.'],
     ['Support oben rechts:', 'Für Wünsche, Fehler und Fragen bitte den Support-Knopf nutzen. Das ist der direkte Weg zu Julius.'],
     ['Anmeldung neu:', 'Alle Geräte melden sich einmal neu an, damit der Schlüssel überall stimmt.'],
-    ['Liebe Grüße,', 'euer Julius.'],
   ];
 
   // Startbestand – Mengen und Grenzen bitte anpassen

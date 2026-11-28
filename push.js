@@ -6,7 +6,7 @@
   const APP = script ? (script.dataset.app || '') : '';
   const MERKER = 'push.v6.aktiv.' + APP;
   const RESET = 'push.reset.v6.' + APP;
-  const HINWEIS = 'push.hinweis.v6.' + APP;
+  const HINWEIS = 'push.hinweis.v7.' + APP;
 
   function zuBytes(s) {
     const b = (s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
@@ -98,7 +98,8 @@
 
   function knopf() {
     if (!APP || !('PushManager' in window)) return;
-    resetEinmal().then(() => pruefen()).then((ok) => { if (!ok) zeigeKnopf(); }).catch(() => zeigeKnopf());
+    // Hinweis erscheint allen einmal, auch wenn schon angemeldet; der Knopf nur, wenn noch keine Anmeldung besteht
+    resetEinmal().then(() => pruefen()).then((ok) => zeigeHinweis(() => { if (!ok) zeigeKnopf(); })).catch(() => zeigeHinweis(() => zeigeKnopf()));
   }
 
   // Einmaliger Hinweis: Support oben, Benachrichtigung unten links
@@ -107,7 +108,7 @@
     const box = document.createElement('div');
     box.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 64px);z-index:20;padding:14px 16px;border-radius:14px;background:var(--surface,#fff);color:var(--ink,#111);font:500 .9rem/1.45 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.25)';
     const text = document.createElement('div');
-    text.textContent = 'Kurz vorab: Für eine bessere Kommunikation nutz bitte oben den Support-Knopf, wenn du Wünsche, Fehler oder Fragen hast. Und damit du auf dem Laufenden bleibst, kannst du unten links „Erinnerungen aufs Handy“ aktivieren. Das ist nur eine Push-Benachrichtigung von Julius. Liebe Grüße, euer Julius.';
+    text.textContent = 'Kurz vorab: Für eine bessere Kommunikation nutz bitte oben den Support-Knopf, wenn du Wünsche, Fehler oder Fragen hast. Und damit du auf dem Laufenden bleibst, kannst du unten links „Erinnerungen aufs Handy“ aktivieren. Das ist nur eine Push-Benachrichtigung. Liebe Grüße, Julius.';
     const ok = document.createElement('button');
     ok.type = 'button';
     ok.textContent = 'Verstanden';
